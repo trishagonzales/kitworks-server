@@ -1,0 +1,160 @@
+datasource db {
+  url      = env("DATABASE_URL")
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String   @id @unique
+  username        String   @unique
+  name            String
+  bio             String?
+  gender          Gender?
+  avatarPublicId  String?
+  avatarPublicUrl String?
+  dateCreated     DateTime @default(now())
+  email           String   @unique
+  password        String?
+  googleToken     String?
+
+  orders            Order[]
+  cart              CartItem[]
+  productWishlist   Product[]       @relation("product-wishlist")
+  productReviews    ProductReview[] @relation("product-review-author")
+  blogComments      BlogComment[]   @relation("blog-comment-author")
+  likedBlogComments BlogComment[]   @relation("blog-comment-like")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  NOT_SPECIFIED
+}
+
+model Product {
+  id          String         @id @unique
+  title       String
+  description String
+  photos      ProductPhoto[]
+  unitPrice   Float
+  stock       Int
+  dateCreated DateTime       @default(now())
+  lastUpdated DateTime       @updatedAt
+
+  reviews      ProductReview[]   @relation("product-review")
+  categories   ProductCategory[] @relation("product-category")
+  tags         ProductTag[]      @relation("product-tag")
+  wishlistedBy User[]            @relation("product-wishlist")
+  placedOrders OrderItem[]
+  placedInCart CartItem[]        @relation("cart-item")
+}
+
+model ProductPhoto {
+  id        String  @id @unique
+  remoteId  String
+  remoteUrl String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String  @unique
+}
+
+model ProductTag {
+  id       String    @id @unique
+  name     String
+  products Product[] @relation("product-tag")
+}
+
+model ProductReview {
+  id          String             @id @unique
+  stars       ProductReviewStars
+  comment     String
+  dateCreated DateTime           @default(now())
+  lastUpdated DateTime           @updatedAt
+
+  author    User    @relation("product-review-author", fields: [authorId], references: [id])
+  authorId  String  @unique
+  product   Product @relation("product-review", fields: [productId], references: [id])
+  productId String  @unique
+}
+
+enum ProductReviewStars {
+  ONE
+  TWO
+  THREE
+  FOUR
+  FIVE
+}
+
+model Order {
+  id            String      @id @unique
+  dateOrdered   DateTime    @default(now())
+  dateDelivered DateTime
+  totalPrice    Float
+  items         OrderItem[]
+  customer      User        @relation(fields: [customerId], references: [id])
+  customerId    String
+}
+
+model OrderItem {
+  id         String  @id @unique
+  quantity   Int
+  totalPrice Float
+  product    Product @relation(fields: [productId], references: [id])
+  productId  String  @unique
+  order      Order   @relation(fields: [orderId], references: [id])
+  orderId    String  @unique
+}
+
+model CartItem {
+  id        String  @id @unique
+  User      User?   @relation(fields: [userId], references: [id])
+  userId    String?
+  product   Product @relation("cart-item", fields: [productId], references: [id])
+  productId String  @unique
+  quantity  Int
+}
+
+model BlogPost {
+  id          String   @id @unique
+  title       String
+  body        String
+  dateCreated DateTime @default(now())
+  lastUpdated DateTime @updatedAt
+
+  comments           BlogComment[]
+  blogPostCategories BlogPostCategory[]
+  blogPostTags       BlogPostTag[]
+}
+
+model BlogComment {
+  id          String   @id @unique
+  comment     String
+  dateCreated DateTime @default(now())
+  lastUpdated DateTime @updatedAt
+
+  blogPost   BlogPost? @relation(fields: [blogPostId], references: [id])
+  blogPostId String?
+  author     User      @relation("blog-comment-author", fields: [authorId], references: [id])
+  authorId   String    @unique
+  likes      User[]    @relation("blog-comment-like")
+}
+
+model ProductCategory {
+  id      String    @id @unique
+  name    String
+  Product Product[] @relation("product-category")
+}
+
+model BlogPostCategory {
+  id        String     @id @unique
+  name      String
+  blogPosts BlogPost[]
+}
+
+model BlogPostTag {
+  id        String     @id @unique
+  name      String
+  blogPosts BlogPost[]
+}
