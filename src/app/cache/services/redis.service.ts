@@ -7,7 +7,7 @@ export class RedisService {
   private _client: Redis;
 
   constructor(private config: ConfigProvider) {
-    this._client = new Redis(config.cache.url);
+    this._client = new Redis(this.config.cache.url);
   }
 
   async set(key: string, payload: string) {
